@@ -1,0 +1,53 @@
+
+git-wrappers-mv - Some personal wrappers for the most important git commands
+
+Author: Martin Väth <martin@mvath.de>
+
+This project is under a BSD type license, meaning that you can do practically
+everything with it except removing my name.
+
+This is a loose collection of some wrappers for git which I use,
+because I cannot remember the general clumsy git syntax.
+
+For installation just put the content of bin somewhere into your $PATH.
+Also put the files of the subdirectory zsh into your $fpath to obtain
+zsh completion support. (If you do not have root access, you can add the
+corresponding directory with fpath+=("...")) before you
+call compdef from your zsh initialization files).
+
+For installation under Gentoo, you can use the ebuild from the mv overlay
+(which is available by layman).
+
+The commands intentionally remind on the git commands they wrap, but they
+are not identical. All tools spit out help with the option -h
+
+git-gc:
+Do the maximal cleanup on the current git repository.
+Everything which cannot be reached directly is pruned, and the data is
+maximally recompressed.
+
+git-commit:
+The current directory with all its content is commited.
+This is roughly equivalent to
+	git add --all .
+	git commit -a
+but reminds about possible signing.
+
+git-tag:
+Tag a release, reminding about possible signing.
+
+git-archive:
+Create (and optionally sign) a tarball for a release, and sign
+all other tarballs in the directory.
+The format of the tarball corresponds to that from github,
+so that you can use the signature file for the release without
+downloading that tarball first: This way, the problem is avoided
+that unsigned data is transferred over the net before signing.
+
+git-push:
+Call git push and then git pull with interactively determined arguments.
+To set origin one might need to execute once:
+	git remote add origin git@github.com:user/[projectname].git
+Moreover, after cloning from a public repository like e.g. github,
+the script can also attempt to modify the .git/config so that one can
+also push to that repository with ssh.

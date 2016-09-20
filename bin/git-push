@@ -1,0 +1,176 @@
+#!/bin/sh
+set -u
+
+export LC_ALL=C
+umask 022
+
+Echo() {
+	printf '%s\n' "$*"
+}
+
+Fatal() {
+	Echo "${0##*/}: %s" "$@" >&2
+	exit 2
+}
+
+EchoExec() {
+	Echo "$*"
+	exec "$@"
+}
+
+EchoWait() {
+	$interactive && printf '%s\n\t%s\n%s' \
+		'About to execute:' "$*" 'Sure that you want this? '
+	while $interactive
+	do	Getkey
+		case $key in
+		[nNfF])
+			Echo 'No. Cancel'
+			exit 1;;
+		[yYjJ]|' '|'
+')
+			Echo 'Yes'
+			break;;
+		esac
+	done
+}
+
+EchoWaitExec() {
+	EchoWait "$@"
+	"$@"
+}
+
+Getkey() {
+	t=`stty -g`
+	stty -icanon -echo
+	key=`dd count=1 bs=1 2>/dev/null`
+	stty $t
+}
+
+Keytext() {
+	Echo \
+'1: git push -u origin master --tags
+2: git push -u origin master
+3: modify .git/config: url -> url+pushurl to make push/pull origin simpler
+   (should work at least with Github, git.overlays.gentoo.org. BerliOS)
+4: help
+0: Cancel'
+}
+
+Usage() {
+	Echo "${0##*/} [option] [number]
+Call git push and then git pull with interactively determined arguments.
+To set origin one might need to execute once:
+	git remote add origin git@github.com:user/[projectname].git
+Moreover, after cloning from a public repository like e.g. github,
+the script can also attempt to modify the .git/config so that one can
+also push to that repository with ssh.
+Options:
+-s TIME sleep TIME seconds (default: 2) before calling git pull
+-F      use git --force: no fast forward
+-f      Push despite wrong permissions
+-p      do not call git pull
+-h      show this text
+
+number:"
+	Keytext
+	exit ${1:-1}
+}
+
+sleep=2
+pull=:
+gitforce=
+force=false
+OPTIND=1
+while getopts 's:fFpHh?' opt
+do	case $opt in
+	s)	sleep=$OPTARG;;
+	f)	force=:;;
+	F)	gitforce=:;;
+	p)	pull=false;;
+	*)	Usage 0;;
+	esac
+done
+shift $(( $OPTIND -1 ))
+
+key=
+[ $# -ge 1 ] && key=$1
+interactive=false
+
+while case $key in
+	[0-4])	false;;
+	esac
+do	interactive=:
+	Keytext
+	Getkey
+done
+$interactive && Echo $key
+
+FixConfig() {
+	file='.git/config'
+	test -r "$file" || Fatal "cannot read $file"
+	regexpa='^[[:space:]]'
+	regexpb='[[:space:]]*=[[:space:]]*'
+	regexpc='[^[:space:]]*'
+	regexpd='[[:space:]]*$'
+	grep -- "${regexpa}pushurl$regexpb" "$file" && \
+		Fatal "$file has already a separate pushurl"
+	r=`sed -n -e "s!${regexpa}url$regexpb\($regexpc\)$regexpd"'!\1!p' -- "$file"` \
+	&& [ -n "${r:++}" ] || Fatal "failed to parse $file"
+	new=
+	case $r in
+	*'@'*':'*)
+		r=${r#*@}
+		r=git://${r%%:*}/${r#*:}
+		r='{i\\turl = '$r'
+s/url/pushurl/}'
+		new=`sed -e "/${regexpa}url$regexpb/$r" -- "$file"` \
+		|| new=;;
+	'git://'*'/'*|'http://'*'/'*|'https://'*'/'*)
+		printf 'Enter username (for Github or overlays.gentoo.org use default: git): '
+		read username
+		r=${r#*//}
+		r=git+ssh://${username:-git}@$r
+		r='a\\tpushurl = '$r
+		new=`sed -e "/${regexpa}url$regexpb/$r" -- "$file"` \
+		|| new=;;
+	esac
+	[ -n "${new:++}" ] || Fatal "$file does not contain recognized url"
+	Echo "Old $file:"
+	cat -- "$file"
+	echo
+	EchoWait "Change $file to:
+$new"
+	Echo "$new" >|"$file" || Fatal "failed to modify $file"
+}
+
+case $key in
+1)
+	tags=:;;
+2)
+	tags=;;
+3)
+	FixConfig
+	exit;;
+4)
+	Usage 0;;
+0)
+	exit 0;;
+esac
+
+if ! $force
+then	[ -n "${UID:++}" ] || UID=`id -u 2>/dev/null`
+	case ${UID:-/} in
+	*[!0-9]*)
+		Fatal 'cannot obtain $UID';;
+	esac
+	[ $UID -ne 0 ] || Fatal 'should not be called with root permissions' \
+		'Use option -f to override'
+fi
+test -w .git || Fatal '.git is not writable'
+! command -v sshstart >/dev/null 2>&1 || sshstart
+EchoWaitExec git push -u origin master ${tags:+--tags} ${gitforce:+--force} \
+	|| exit
+$pull || exit 0
+[ -z "${sleep:++}" ] || sleep $sleep
+EchoExec git pull

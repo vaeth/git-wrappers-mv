@@ -1,0 +1,67 @@
+#!/bin/sh
+set -u
+export LC_ALL=C
+umask 022
+
+Echo() {
+	printf '%s\n' "$*"
+}
+
+Die() {
+	s=$?
+	Echo "$1" >&2
+	exit ${2:-$s}
+}
+
+ExecDie() {
+	Echo "# $*"
+	"$@" || Die "$* returned $?"
+}
+
+Usage() {
+	Echo "Usage: ${0##*/} [options] s[ign]|u[nsigned] [git commit options]
+The current directory with all its content is commited.
+This is roughly equivalent to
+	git add --all .
+	git commit -a
+but reminds about possible signing.
+
+Typical git commit option: --amend
+-t Set GPG_TTY to current tty when signing (default)
+-T Do not modify GPG_TTY
+-h Show this help"
+	exit ${1:-1}
+}
+
+# Get options
+OPTIND=1
+while getopts 'tThH?' opt
+do	case $opt in
+	t)	gettty=:;;
+	T)	gettty=false;;
+	*)	Usage 0;;
+	esac
+done
+shift $(( $OPTIND - 1 ))
+
+case ${1-} in
+[sS]*)
+	if $gettty
+	then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
+		|| unset GPG_TTY
+	fi
+	shift
+	set -- -S ${1+"@"};;
+[uU]*)
+	shift;;
+[hH?]*)
+	Usage 0;;
+esac
+
+test -w .git || Die '.git is not writable'
+ExecDie git add --all .
+ExecDie git commit -a ${1+"$@"}
+Echo 'Next steps:
+	git-gc
+	[git-tag && git-gc]
+	git-push'

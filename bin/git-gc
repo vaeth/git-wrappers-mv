@@ -1,0 +1,43 @@
+#!/bin/sh
+set -u
+export LC_ALL=C
+umask 022
+
+Echo() {
+	printf '%s\n' "$*"
+}
+
+ExecWarn() {
+	Echo "# $*"
+	"$@" || Echo "warning: $* returned: $?" >&2
+}
+
+Usage() {
+	Echo "Usage: ${0##*/} [options]
+Do the maximal cleanup on the current git repository.
+Everything which cannot be reached directly is pruned, and the data is
+maximally recompressed.
+-q Quiet
+-h Show this help"
+	exit ${1:-1}
+}
+
+# Get options
+OPTIND=1
+quiet=false
+while getopts 'qhH?' opt
+do	case $opt in
+	q)	quiet=:;;
+	*)	Usage 0;;
+	esac
+done
+shift $(( $OPTIND - 1 ))
+
+! $quiet || exec >/dev/null
+
+ExecWarn git prune
+ExecWarn git repack -a -d
+ExecWarn git reflog expire --expire=now --all
+ExecWarn git gc '--prune=all' --aggressive
+ExecWarn git repack -a -d
+ExecWarn git prune

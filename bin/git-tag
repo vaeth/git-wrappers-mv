@@ -1,0 +1,132 @@
+#!/bin/sh
+set -u
+export LC_ALL=C
+umask 022
+
+tarball=
+case $0 in
+*tag)
+	tarball=false;;
+esac
+
+Echo() {
+	printf '%s\n' "$*"
+}
+
+Echon() {
+	printf '%s' "$*"
+}
+
+EchoExec() {
+	Echo "$*"
+	"$@"
+}
+
+Fatal() {
+	Echo "${0##*/}: $1" >&2
+	exit 1
+}
+
+Usage() {
+	if $tarball
+	then	help='
+Create (and optionally sign) a tarball for a release, and sign
+all other tarballs in the directory.
+The format of the tarball corresponds to that from github,
+so that you can use the signature file for the release without
+downloading that tarball first: This way, the problem is avoided
+that unsigned data is transferred over the net before signing.'
+	else	help='
+Tag a release, reminding about possible signing.'
+	fi
+	Echo "Usage: ${0##*/} [options] [tag]$help
+-s Sign$signdefault
+-a Do not sign$unsigndefault
+-t Set GPG_TTY to current tty when signing (default)
+-T Do not modify GPG_TTY
+-h Show this help"
+	exit ${1:-1}
+}
+
+# Default for the options
+if [ -n "${GPG_TTY++}" ]
+then	sign=:
+	signdefault=' (default since $GPG_TTY is set)'
+	unsigndefault=
+else	sign=false
+	signdefault=
+	unsigndefault=' (default since $GPG_TTY is unset)'
+fi
+
+# Get options
+OPTIND=1
+gettty=:
+force=false
+while getopts 'ftTsahH?' opt
+do	case $opt in
+	s)	sign=:;;
+	a)	sign=false;;
+	t)	gettty=:;;
+	T)	gettty=false;;
+	f)	force=:;;
+	*)	Usage 0;;
+	esac
+done
+shift $(( $OPTIND - 1 ))
+
+test -d .git || Fatal '.git does not exit'
+
+if $sign
+then	tagtext=signed
+else	tagtext=unsigned
+fi
+
+if [ $# -gt 0 ]
+then	tag=$1
+else	EchoExec git tag -ln
+	if $tarball
+	then	Echon 'Enter tag for $tagtext tarball: '
+	else	Echon "Enter new tag $tagtext commit: "
+	fi
+	read -r tag
+fi
+
+case ${tag:-/} in
+*[!0-9.a-z]*)
+	Fatal 'Illegal tag';;
+esac
+! $force && case $tag in
+v*)
+	false;;
+esac && Fatal 'tag must start with v'
+
+if $sign && $gettty
+then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
+		|| unset GPG_TTY
+fi
+
+if ! $tarball
+then	if $sign
+	then	tagopt=-s
+	else	tagopt=-a
+	fi
+	git tag $tagopt "$tag" -m "Release $tag" || exit
+	Echo "Tagged successfully $tag release ($tagtext)"
+	exit
+fi
+
+name=${PWD##*/}
+name=${name%.git}
+n=$name-${tag#v}
+EchoExec git archive --prefix="$n/" -o "$n.tar.gz" "$tag"
+#EchoExec git archive --prefix="$n/" -o "$n.zip" "$tag"
+$sign || exit 0
+
+for i in *.tar *.tar.* *.zip
+do	case $i in
+	*.asc)
+		continue;;
+	esac
+	test -f "$i" || continue
+	EchoExec gpg --armor --detach-sign "$i"
+done

@@ -1,0 +1,24 @@
+#compdef git-tag git-archive
+local curcontext="$curcontext" state state_descr line
+typeset -A opt_args
+_arguments -C -s -S -A '-*' : \
+'(1 -)'{'-h','-H','-\\?'}'[help]' \
+'(-a)-s[Sign tag]' \
+'(-s)-a[Do not sign tag]' \
+'-f[force even if tag does not start with v]' \
+'(-T)-t[Set GPG_TTY to current tty]' \
+'(-t)-T[Do not modify GPG_TTY]' \
+'*::git-tag:->tag'
+local ret=$?
+case $state in
+(tag)
+	local tags
+	tags=(${${(f)"$(_call_program tagrefs git for-each-ref --format='"%(refname)"' refs/tags 2>/dev/null)"}#refs/tags/})
+	if (( ${#pipestatus:#0} > 0 )); then
+		_message 'not a git repository'
+		return 1
+	fi
+	_wanted tags expl tag compadd -M 'r:|/=**' "$@" -a - tags
+	ret=$?
+esac
+return ret

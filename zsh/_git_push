@@ -1,0 +1,24 @@
+#compdef git-push
+local curcontext="$curcontext" state state_descr line
+typeset -A opt_args
+_arguments -C -s -S -A '-*' : \
+'(1 -)'{'-h','-H','-\\?'}'[help]' \
+'-s+[sleep specified seconds before git pull]:seconds:(2)' \
+'-f[force - push despite wrong permissions]' \
+'-F[use git --force - no fast forward]' \
+'-p[do not call git pull]' \
+'1:command:->cmds'
+local ret=$?
+case $state in
+(cmds)
+	local cmds
+	cmds=(
+	'1:git push -u origin master --tags'
+	'2:git push -u origin master'
+	'3:try to fix origin address'
+	'4:help'
+	)
+	_describe -t commands 'command' cmds
+	ret=$?;;
+esac
+return ret
