@@ -33,7 +33,7 @@ Typical git commit option: --amend
 	exit ${1:-1}
 }
 
-# Get options
+gettty=:
 OPTIND=1
 while getopts 'tThH?' opt
 do	case $opt in

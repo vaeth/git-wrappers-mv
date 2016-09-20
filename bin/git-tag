@@ -51,7 +51,6 @@ Tag a release, reminding about possible signing.
 	exit ${1:-1}
 }
 
-# Default for the options
 if [ -n "${GPG_TTY++}" ]
 then	sign=:
 	signdefault=' (default since $GPG_TTY is set)'
@@ -66,12 +65,11 @@ then	addopt=
 else	addopt=dDr
 fi
 
-# Get options
-OPTIND=1
 gettty=:
 force=false
 delete=false
 remove=false
+OPTIND=1
 while getopts "ftTsahH?$addopt" opt
 do	case $opt in
 	s)	sign=:;;

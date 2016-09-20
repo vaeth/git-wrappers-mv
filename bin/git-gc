@@ -22,9 +22,8 @@ maximally recompressed.
 	exit ${1:-1}
 }
 
-# Get options
-OPTIND=1
 quiet=false
+OPTIND=1
 while getopts 'qhH?' opt
 do	case $opt in
 	q)	quiet=:;;
