@@ -3,10 +3,10 @@ set -u
 export LC_ALL=C
 umask 022
 
-tarball=
+archive=:
 case $0 in
 *tag)
-	tarball=false;;
+	archive=false;;
 esac
 
 Echo() {
@@ -28,7 +28,7 @@ Fatal() {
 }
 
 Usage() {
-	if $tarball
+	if $archive
 	then	help='
 Create (and optionally sign) a tarball for a release, and sign
 all other tarballs in the directory.
@@ -37,7 +37,10 @@ so that you can use the signature file for the release without
 downloading that tarball first: This way, the problem is avoided
 that unsigned data is transferred over the net before signing.'
 	else	help='
-Tag a release, reminding about possible signing.'
+Tag a release, reminding about possible signing.
+-d Delete tag (locally)
+-D Delete tag (locally and remotely)
+-r Remove tag (remotely)'
 	fi
 	Echo "Usage: ${0##*/} [options] [tag]$help
 -s Sign$signdefault
@@ -58,14 +61,25 @@ else	sign=false
 	unsigndefault=' (default since $GPG_TTY is unset)'
 fi
 
+if $archive
+then	addopt=
+else	addopt=dDr
+fi
+
 # Get options
 OPTIND=1
 gettty=:
 force=false
-while getopts 'ftTsahH?' opt
+delete=false
+remove=false
+while getopts "ftTsahH?$addopt" opt
 do	case $opt in
 	s)	sign=:;;
 	a)	sign=false;;
+	d)	delete=:;;
+	D)	delete=:
+		remove=:;;
+	r)	remove=:;;
 	t)	gettty=:;;
 	T)	gettty=false;;
 	f)	force=:;;
@@ -84,7 +98,7 @@ fi
 if [ $# -gt 0 ]
 then	tag=$1
 else	EchoExec git tag -ln
-	if $tarball
+	if $archive
 	then	Echon 'Enter tag for $tagtext tarball: '
 	else	Echon "Enter new tag $tagtext commit: "
 	fi
@@ -100,12 +114,18 @@ v*)
 	false;;
 esac && Fatal 'tag must start with v'
 
+if $delete || $remove
+then	! $delete || EchoExec git tag -d "$tag"
+	! $remove || EchoExec git push origin ":refs/tags/$tag"
+	exit
+fi
+
 if $sign && $gettty
 then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
 		|| unset GPG_TTY
 fi
 
-if ! $tarball
+if ! $archive
 then	if $sign
 	then	tagopt=-s
 	else	tagopt=-a
