@@ -22,7 +22,7 @@ _arguments -C -s -S -A '-*' : \
 '(1 -)'{'-h','-H','-\\?'}'[help]' \
 '-t[Set GPG_TTY to current tty]' \
 '-T[Do not modify GPG_TTY]' \
-'1:mode:->mode' \
+'1:mode:->mode'
 local ret=$?
 case $state in
 (mode)

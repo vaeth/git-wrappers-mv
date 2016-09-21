@@ -21,28 +21,12 @@ For installation under Gentoo, you can use the ebuild from the mv overlay
 The commands intentionally remind on the git commands they wrap, but they
 are not identical. All tools spit out help with the option -h
 
-git-gc:
-Do the maximal cleanup on the current git repository.
-Everything which cannot be reached directly is pruned, and the data is
-maximally recompressed.
-
 git-commit:
 The current directory with all its content is commited.
 This is roughly equivalent to
 	git add --all .
 	git commit -a
 but reminds about possible signing.
-
-git-tag:
-Tag a release, reminding about possible signing.
-
-git-archive:
-Create (and optionally sign) a tarball for a release, and sign
-all other tarballs in the directory.
-The format of the tarball corresponds to that from github,
-so that you can use the signature file for the release without
-downloading that tarball first: This way, the problem is avoided
-that unsigned data is transferred over the net before signing.
 
 git-push:
 Call git push and then git pull with interactively determined arguments.
@@ -51,3 +35,25 @@ To set origin one might need to execute once:
 Moreover, after cloning from a public repository like e.g. github,
 the script can also attempt to modify the .git/config so that one can
 also push to that repository with ssh.
+
+git-gc:
+Do the maximal cleanup on the current git repository.
+Everything which cannot be reached directly is pruned, and the data is
+maximally recompressed.
+
+git-tag:
+Tag a release (reminding about possible signing) or remove a tag.
+
+git-archive:
+Create (and optionally sign) a tarball for a release, and sign
+all other tarballs in the directory.
+
+The format of the tarball corresponds to that from github,
+so that you can use the signature file for the release without
+downloading that tarball first: This way, the problem is avoided
+that unsigned data is transferred over the net before signing.
+
+Note that to get byte-identical zip files (as necessary for signing),
+the timezone of the generating servers must be identical.
+The script sets the timezone to PST8PDT (of the github servers) by default,
+but you can override this by some options.

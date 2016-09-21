@@ -4,8 +4,8 @@ typeset -A opt_args
 local opts
 opts=(
 '(1 -)'{'-h','-H','-\\?'}'[help]'
-'(-a)-s[Sign tag]'
-'(-s)-a[Do not sign tag]'
+'(-a)-s[Sign]'
+'(-s)-a[Do not sign]'
 '-f[force even if tag does not start with v]'
 '(-T)-t[Set GPG_TTY to current tty]'
 '(-t)-T[Do not modify GPG_TTY]'
@@ -17,6 +17,11 @@ case $service in
 '(-d -r)-D[Delete tag locally and remotely]'
 '-r[Remove tag remotely]'
 );;
+(*)
+	opts+=(
+'(-P)-p[TZ=\::/usr/share/zoneinfo/US/Pacific-New]'
+'(-p)-P+[Set TZ to specficied value for zip]:timezone:_time_zone'
+)
 esac
 _arguments -C -s -S -A '-*' : $opts \
 '1::tag:->tag'
@@ -24,11 +29,11 @@ local ret=$?
 case $state in
 (tag)
 	local tags
-	tags=(${${(f)"$(_call_program tagrefs git for-each-ref --format='"%(refname)"' refs/tags 2>/dev/null)"}#refs/tags/})
-	if (( ${#pipestatus:#0} > 0 )); then
+	tags=(${(f)"$(_call_program tagrefs git tag -l 2>/dev/null)"})
+	(( $? )) && {
 		_message 'not a git repository'
 		return 1
-	fi
+	}
 	_wanted tags expl tag compadd -M 'r:|/=**' "$@" -a - tags
 	ret=$?
 esac

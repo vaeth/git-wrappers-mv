@@ -56,6 +56,8 @@ case ${1-} in
 	shift;;
 [hH?]*)
 	Usage 0;;
+*)
+	Usage;;
 esac
 
 test -w .git || Die '.git is not writable'
