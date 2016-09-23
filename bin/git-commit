@@ -51,7 +51,7 @@ case ${1-} in
 		|| unset GPG_TTY
 	fi
 	shift
-	set -- -S ${1+"@"};;
+	set -- -S ${1+"$@"};;
 [uU]*)
 	shift;;
 [hH?]*)
@@ -60,7 +60,6 @@ case ${1-} in
 	Usage;;
 esac
 
-test -w .git || Die '.git is not writable'
 ExecDie git add --all .
 ExecDie git commit -a ${1+"$@"}
 Echo 'Next steps:
