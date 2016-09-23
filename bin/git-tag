@@ -118,10 +118,21 @@ else	EchoExec git tag -ln
 	fi
 	if $archive
 	then	Echon "Enter tag for $tagtext tarball (default: $latesttag): "
+	elif $delete || $remove
+	then	if $delete
+		then	if $remove
+			then	remtext='remove locally+remotely'
+			else	remtext='delete locally'
+			fi
+		else	remtext='remove remotely'
+		fi
+		Echon "Enter tag to $remtext (default: $latesttag): "
 	else	Echon "Enter new tag for $tagtext commit: "
 	fi
 	read -r tag
-	! $archive || [ -n "${tag:++}" ] || tag=$latesttag
+	if $archive || $delete || $remove
+	then	[ -n "${tag:++}" ] || tag=$latesttag
+	fi
 fi
 
 case ${tag:-/} in
