@@ -3,7 +3,7 @@ local curcontext="$curcontext" state state_descr line
 typeset -A opt_args
 local opts
 opts=(
-'(1 -)'{'-h','-H','-\\?'}'[help]'
+'(1 -)'{'-h','-H'}'[help]'
 '(-a)-s[Sign]'
 '(-s)-a[Do not sign]'
 '-f[force even if tag does not start with v]'

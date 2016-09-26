@@ -49,8 +49,8 @@ Getkey() {
 
 Keytext() {
 	Echo \
-'1: git push -u origin master --tags
-2: git push -u origin master
+'1: git push -u origin master --tags'${gitforce:+\ --force}'
+2: git push -u origin master'${gitforce:+\ --force}'
 3: modify .git/config: url -> url+pushurl to make push/pull origin simpler
    (should work at least with Github, git.overlays.gentoo.org. BerliOS)
 4: help
@@ -82,12 +82,13 @@ pull=:
 gitforce=
 force=false
 OPTIND=1
-while getopts 's:fFpHh?' opt
+while getopts 's:fFpHh' opt
 do	case $opt in
 	s)	sleep=$OPTARG;;
 	f)	force=:;;
 	F)	gitforce=:;;
 	p)	pull=false;;
+	'?')	exit 1;;
 	*)	Usage 0;;
 	esac
 done
@@ -98,7 +99,8 @@ key=
 interactive=false
 
 while case $key in
-	[0-4])	false;;
+	[01234])
+		false;;
 	esac
 do	interactive=:
 	Keytext
@@ -161,7 +163,7 @@ esac
 if ! $force
 then	[ -n "${UID:++}" ] || UID=`id -u 2>/dev/null`
 	case ${UID:-/} in
-	*[!0-9]*)
+	*[!0123456789]*)
 		Fatal 'cannot obtain $UID';;
 	esac
 	[ $UID -ne 0 ] || Fatal 'should not be called with root permissions' \

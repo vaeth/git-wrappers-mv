@@ -19,7 +19,7 @@ fi
 local curcontext="$curcontext" state state_descr line
 typeset -A opt_args
 _arguments -C -s -S -A '-*' : \
-'(1 -)'{'-h','-H','-\\?'}'[help]' \
+'(1 -)'{'-h','-H'}'[help]' \
 '-t[Set GPG_TTY to current tty]' \
 '-T[Do not modify GPG_TTY]' \
 '1:mode:->mode'

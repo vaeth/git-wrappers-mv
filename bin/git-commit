@@ -35,10 +35,11 @@ Typical git commit option: --amend
 
 gettty=:
 OPTIND=1
-while getopts 'tThH?' opt
+while getopts 'tThH' opt
 do	case $opt in
 	t)	gettty=:;;
 	T)	gettty=false;;
+	'?')	exit 1;;
 	*)	Usage 0;;
 	esac
 done

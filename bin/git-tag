@@ -83,7 +83,7 @@ force=false
 delete=false
 remove=false
 OPTIND=1
-while getopts "ftTsahH?$addopt" opt
+while getopts "ftTsahH$addopt" opt
 do	case $opt in
 	s)	sign=:;;
 	a)	sign=false;;
@@ -96,6 +96,7 @@ do	case $opt in
 	t)	gettty=:;;
 	T)	gettty=false;;
 	f)	force=:;;
+	'?')	exit 1;;
 	*)	Usage 0;;
 	esac
 done
@@ -136,7 +137,7 @@ else	EchoExec git tag -ln
 fi
 
 case ${tag:-/} in
-*[!0-9.a-z]*)
+*[!.0123456789abcdefghijklmnopqrstuvwxyz]*)
 	Fatal 'Illegal tag';;
 esac
 ! $force && case $tag in

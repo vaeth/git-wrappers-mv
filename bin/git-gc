@@ -24,9 +24,10 @@ maximally recompressed.
 
 quiet=false
 OPTIND=1
-while getopts 'qhH?' opt
+while getopts 'qhH' opt
 do	case $opt in
 	q)	quiet=:;;
+	'?')	exit 1;;
 	*)	Usage 0;;
 	esac
 done
