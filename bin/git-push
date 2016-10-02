@@ -170,8 +170,17 @@ then	[ -n "${UID:++}" ] || UID=`id -u 2>/dev/null`
 		'Use option -f to override'
 fi
 test -w .git || Fatal '.git is not writable'
+remote=`git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'` && \
+	case ${remote:-x} in
+	*/*)
+		:;;
+	*)
+		false;;
+	esac || Fatal 'cannot determine remote branch'
+origin=${remote%%/*}
+master=${remote#*/}
 ! command -v sshstart >/dev/null 2>&1 || sshstart
-EchoWaitExec git push -u origin master ${tags:+--tags} ${gitforce:+--force} \
+EchoWaitExec git push -u "$origin" "$master" ${tags:+--tags} ${gitforce:+--force} \
 	|| exit
 $pull || exit 0
 [ -z "${sleep:++}" ] || sleep $sleep
