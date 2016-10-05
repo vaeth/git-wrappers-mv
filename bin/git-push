@@ -9,7 +9,12 @@ Echo() {
 }
 
 Fatal() {
-	Echo "${0##*/}: %s" "$@" >&2
+	Echo "${0##*/}: $*" >&2
+	exit 2
+}
+
+Warning() {
+	Echo "${0##*/}: warning: $*" >&2
 	exit 2
 }
 
@@ -176,7 +181,10 @@ remote=`git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'` && \
 		:;;
 	*)
 		false;;
-	esac || Fatal 'cannot determine remote branch'
+	esac || {
+		remote=origin/master
+		Warning 'cannot determine remote branch. using $remote'
+	}
 origin=${remote%%/*}
 master=${remote#*/}
 ! command -v sshstart >/dev/null 2>&1 || sshstart
