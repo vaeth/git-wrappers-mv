@@ -138,7 +138,7 @@ else	EchoExec git tag -ln
 fi
 
 case ${tag:-/} in
-*[!.0123456789abcdefghijklmnopqrstuvwxyz]*)
+*[!.0123456789_abcdefghijklmnopqrstuvwxyz]*)
 	Fatal 'Illegal tag';;
 esac
 ! $force && case $tag in
