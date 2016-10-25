@@ -15,7 +15,6 @@ Fatal() {
 
 Warning() {
 	Echo "${0##*/}: warning: $*" >&2
-	exit 2
 }
 
 EchoExec() {
@@ -183,7 +182,7 @@ remote=`git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'` && \
 		false;;
 	esac || {
 		remote=origin/master
-		Warning 'cannot determine remote branch. using $remote'
+		Warning "cannot determine remote branch. using $remote"
 	}
 origin=${remote%%/*}
 master=${remote#*/}

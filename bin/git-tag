@@ -45,6 +45,7 @@ The script sets the timezone to PST8PDT (of the github servers) by default,
 but you can override this by some options.
 '
 		extraopts='
+-z     Keep zip file archive; by default only .tar.gz is kept
 -p     Set TZ to ":/usr/share/zoneinfo/US/Pacific-New" for zip file generation
 -P VAL Set TZ to VAL. If VAL is empty or "-", do not modify TZ'
 	else	help='
@@ -74,7 +75,7 @@ else	sign=false
 fi
 
 if $archive
-then	addopt=pP:
+then	addopt=zpP:
 else	addopt=dDr
 fi
 
@@ -83,6 +84,7 @@ gettty=:
 force=false
 delete=false
 remove=false
+keepzip=false
 OPTIND=1
 while getopts "ftTsahH$addopt" opt
 do	case $opt in
@@ -97,6 +99,7 @@ do	case $opt in
 	t)	gettty=:;;
 	T)	gettty=false;;
 	f)	force=:;;
+	z)	keepzip=:;;
 	'?')	exit 1;;
 	*)	Usage 0;;
 	esac
@@ -171,6 +174,8 @@ name=${PWD##*/}
 name=${name%.git}
 n=$name-${tag#v}
 EchoExec git archive --prefix="$n/" -o "$n.tar.gz" "$tag"
+chmod -- 664 "$n.tar.gz"
+$sign || $keepzip || exit 0
 (
 	[ "${tz:--}" = '-' ] || {
 		TZ=$tz
@@ -178,10 +183,11 @@ EchoExec git archive --prefix="$n/" -o "$n.tar.gz" "$tag"
 		Echo "# export TZ=\"$tz\""
 	}
 	EchoExec git archive --prefix="$n/" -o "$n.zip" "$tag"
+	chmod -- 664 "$n.zip"
 )
 $sign || exit 0
 
-for i in *.tar *.tar.* *.zip
+for i in "$n".tar "$n".tar.* "$n".zip
 do	case $i in
 	*.asc)
 		continue;;
@@ -189,4 +195,4 @@ do	case $i in
 	test -f "$i" || continue
 	EchoExec gpg --armor --detach-sign "$i"
 done
-:
+$keepzip || rm -vf -- "$n".zip
