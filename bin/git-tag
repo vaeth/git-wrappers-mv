@@ -174,7 +174,6 @@ name=${PWD##*/}
 name=${name%.git}
 n=$name-${tag#v}
 EchoExec git archive --prefix="$n/" -o "$n.tar.gz" "$tag"
-chmod -- 664 "$n.tar.gz"
 $sign || $keepzip || exit 0
 (
 	[ "${tz:--}" = '-' ] || {
@@ -183,7 +182,6 @@ $sign || $keepzip || exit 0
 		Echo "# export TZ=\"$tz\""
 	}
 	EchoExec git archive --prefix="$n/" -o "$n.zip" "$tag"
-	chmod -- 664 "$n.zip"
 )
 $sign || exit 0
 
