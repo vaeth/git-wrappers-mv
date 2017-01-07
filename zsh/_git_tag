@@ -21,7 +21,7 @@ case $service in
 	opts+=(
 '(-P)-p[TZ=\::/usr/share/zoneinfo/US/Pacific-New]'
 '(-p)-P+[Set TZ to specficied value for zip]:timezone:_time_zone'
-)
+);;
 esac
 _arguments -C -s -S -A '-*' : $opts \
 '1::tag:->tag'
@@ -34,7 +34,6 @@ case $state in
 		_message 'not a git repository'
 		return 1
 	}
-	_wanted tags expl tag compadd -M 'r:|/=**' "$@" -a - tags
-	ret=$?
+	_wanted tags expl tag compadd -M 'r:|/=**' "$@" -a - tags && ret=0;;
 esac
 return ret

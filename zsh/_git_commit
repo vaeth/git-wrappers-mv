@@ -32,7 +32,6 @@ case $state in
 	'unsigned:make an unsigned commit'
 	'help:show help'
 	)
-	_describe -t mode 'mode' mode
-	ret=$?;;
+	_describe -t mode 'mode' mode && ret=0;;
 esac
 return ret
