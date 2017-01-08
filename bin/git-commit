@@ -20,17 +20,22 @@ ExecDie() {
 }
 
 Usage() {
-	Echo "Usage: ${0##*/} [options] s[ign]|u[nsigned] [git commit options]
+	Echo "Usage: ${0##*/} [options] [--] [git commit options]
 The current directory with all its content is commited.
 This is roughly equivalent to
 	git add --all .
-	git commit -a
-but reminds about possible signing.
+	git commit -a [git commit options]
+but possibly also exports GPG_TTY.
 
-Typical git commit option: --amend
--t Set GPG_TTY to current tty when signing (default)
+Options:
+-t Set GPG_TTY to current tty (default)
 -T Do not modify GPG_TTY
--h Show this help"
+-h Show this help
+
+If you want to sign, use git commit option -S or
+	git config commit.gpgsign true
+
+Another frequently used git commit option: --amend"
 	exit ${1:-1}
 }
 
@@ -46,21 +51,10 @@ do	case $opt in
 done
 shift $(( $OPTIND - 1 ))
 
-case ${1-} in
-[sS]*)
-	if $gettty
-	then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
+if $gettty
+then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
 		|| unset GPG_TTY
-	fi
-	shift
-	set -- -S ${1+"$@"};;
-[uU]*)
-	shift;;
-[hH?]*)
-	Usage 0;;
-*)
-	Usage;;
-esac
+fi
 
 ExecDie git add --all .
 ExecDie git commit -a ${1+"$@"}

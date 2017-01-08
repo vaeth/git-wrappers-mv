@@ -58,7 +58,7 @@ Tag a release (reminding about possible signing) or remove a tag.'
 	Echo "Usage: ${0##*/} [options] [tag]$help
 -s     Sign$signdefault
 -a     Do not sign$unsigndefault
--t     Set GPG_TTY to current tty when signing (default)
+-t     Set GPG_TTY to current tty (default)
 -T     Do not modify GPG_TTY$extraopts
 -f     Force even if tag does not start with v
 -h     Show this help"
@@ -115,7 +115,7 @@ fi
 
 if [ $# -gt 0 ]
 then	tag=$1
-else	EchoExec git tag -ln
+else	EchoExec git tag -ln --sort=version:refname
 	latesttag=`git describe --abbrev=0 2>/dev/null` || latesttag=
 	if [ -z "${latesttag:++}" ]
 	then	Echo 'Latest tag cannot be determined'
@@ -155,7 +155,7 @@ then	! $delete || EchoExec git tag -d "$tag"
 	exit
 fi
 
-if $sign && $gettty
+if $gettty
 then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
 		|| unset GPG_TTY
 fi
