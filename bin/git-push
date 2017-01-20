@@ -22,6 +22,11 @@ EchoExec() {
 	exec "$@"
 }
 
+GetDir() {
+	dir=`git rev-parse --show-toplevel 2>/dev/null` && [ -n "$dir" ] \
+		&& test -d "$dir/.git" || Die 'not in a git repository'
+}
+
 EchoWait() {
 	$interactive && printf '%s\n\t%s\n%s' \
 		'About to execute:' "$*" 'Sure that you want this? '
@@ -112,16 +117,19 @@ do	interactive=:
 done
 $interactive && Echo $key
 
+
 FixConfig() {
+	GetDir
 	file='.git/config'
-	test -r "$file" || Fatal "cannot read $file"
+	fpath=$dir/$file
+	test -r "$fpath" || Fatal "cannot read $file"
 	regexpa='^[[:space:]]'
 	regexpb='[[:space:]]*=[[:space:]]*'
 	regexpc='[^[:space:]]*'
 	regexpd='[[:space:]]*$'
-	grep -- "${regexpa}pushurl$regexpb" "$file" && \
+	grep -- "${regexpa}pushurl$regexpb" "$fpath" && \
 		Fatal "$file has already a separate pushurl"
-	r=`sed -n -e "s!${regexpa}url$regexpb\($regexpc\)$regexpd"'!\1!p' -- "$file"` \
+	r=`sed -n -e "s!${regexpa}url$regexpb\($regexpc\)$regexpd"'!\1!p' -- "$fpath"` \
 	&& [ -n "${r:++}" ] || Fatal "failed to parse $file"
 	new=
 	case $r in
@@ -130,7 +138,7 @@ FixConfig() {
 		r=git://${r%%:*}/${r#*:}
 		r='{i\\turl = '$r'
 s/url/pushurl/}'
-		new=`sed -e "/${regexpa}url$regexpb/$r" -- "$file"` \
+		new=`sed -e "/${regexpa}url$regexpb/$r" -- "$fpath"` \
 		|| new=;;
 	'git://'*'/'*|'http://'*'/'*|'https://'*'/'*)
 		printf 'Enter username (for Github or overlays.gentoo.org use default: git): '
@@ -138,16 +146,16 @@ s/url/pushurl/}'
 		r=${r#*//}
 		r=git+ssh://${username:-git}@$r
 		r='a\\tpushurl = '$r
-		new=`sed -e "/${regexpa}url$regexpb/$r" -- "$file"` \
+		new=`sed -e "/${regexpa}url$regexpb/$r" -- "$fpath"` \
 		|| new=;;
 	esac
 	[ -n "${new:++}" ] || Fatal "$file does not contain recognized url"
 	Echo "Old $file:"
-	cat -- "$file"
+	cat -- "$fpath"
 	echo
 	EchoWait "Change $file to:
 $new"
-	Echo "$new" >|"$file" || Fatal "failed to modify $file"
+	Echo "$new" >|"$fpath" || Fatal "failed to modify $file"
 }
 
 case $key in
@@ -171,9 +179,10 @@ then	[ -n "${UID:++}" ] || UID=`id -u 2>/dev/null`
 		Fatal 'cannot obtain $UID';;
 	esac
 	[ $UID -ne 0 ] || Fatal 'should not be called with root permissions' \
-		'Use option -f to override'
+		'Use option -f to override this test'
 fi
-test -w .git || Fatal '.git is not writable'
+GetDir
+test -w "$dir/.git" || Fatal '.git is not writable'
 remote=`git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'` && \
 	case ${remote:-x} in
 	*/*)

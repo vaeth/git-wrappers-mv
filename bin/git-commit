@@ -10,7 +10,7 @@ Echo() {
 
 Die() {
 	s=$?
-	Echo "$1" >&2
+	Echo "${0##*/}: fatal: $1" >&2
 	exit ${2:-$s}
 }
 
@@ -56,6 +56,12 @@ then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
 		|| unset GPG_TTY
 fi
 
+dir=`git rev-parse --show-toplevel 2>/dev/null` && [ -n "$dir" ] \
+	&& test -d "$dir/.git" || Die 'not in a git repository'
+
+cd "$dir" >/dev/null 2>&1 || Die "cannot cd to $dir"
+
+ExecDie rm -f -- .git/index
 ExecDie git add --all .
 ExecDie git commit -a ${1+"$@"}
 Echo 'Next steps:
