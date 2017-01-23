@@ -1,4 +1,20 @@
-#compdef git-commit
+#compdef git-commit git-status git-update-index
+local service_opts git_args
+service_opts=(
+	'(-)'{'-h','-H'}'[help]' \
+)
+case $service in
+(*commit*)
+	git_args=(commit)
+	service_opts+=(
+'-t[Set GPG_TTY to current tty]' \
+'-T[Do not modify GPG_TTY]'
+);;
+(*status*)
+	git_args=(status);;
+(*)
+	git_args=(update-index --refresh -q --unmerged);;
+esac
 local i
 i=2
 while ((i <= CURRENT))
@@ -11,12 +27,9 @@ do	[[ $words[i] != -- ]] && {
 done
 if ((i <= CURRENT))
 then	shift $((i-1)) words
-	words=(git commit $words)
-	((CURRENT-=i-3))
+	words=(git $git_args $words)
+	((CURRENT-=i-2-$#git_args))
 	_normal
 	return
 fi
-_arguments -s -S : \
-'(-)'{'-h','-H'}'[help]' \
-'-t[Set GPG_TTY to current tty]' \
-'-T[Do not modify GPG_TTY]'
+_arguments -s -S : $service_opts

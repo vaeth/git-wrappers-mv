@@ -4,6 +4,20 @@ LC_ALL=C
 export LC_ALL
 umask 022
 
+index=false
+commit=false
+status=false
+opts=hH
+case $0 in
+*status)
+	status=:;;
+*commit)
+	opts=tT$opts
+	commit=:;;
+*)
+	index=:;;
+esac
+
 Echo() {
 	printf '%s\n' "$*"
 }
@@ -20,7 +34,8 @@ ExecDie() {
 }
 
 Usage() {
-	Echo "Usage: ${0##*/} [options] [--] [git commit options]
+	if $commit
+	then	Echo "Usage: ${0##*/} [options] [-- [git commit options]]
 The current directory with all its content is commited.
 This is roughly equivalent to
 	git add --all .
@@ -36,12 +51,23 @@ If you want to sign, use git commit option -S or
 	git config commit.gpgsign true
 
 Another frequently used git commit option: --amend"
+	else	if $status
+		then	Echo "Usage: ${0##*/} [options] [-- [git status options]]
+This is like git status, but in advance regenerates the index to the status
+of the working directory."
+		else	Echo "Usage: ${0##*/} [-h] [-- [git update-index options]]
+This simlar to git update-index --refresh -q --unmerged but in advance
+regenerates the index to the status of the working directory."
+		fi
+		Echo 'Options:
+-h Show this help'
+	fi
 	exit ${1:-1}
 }
 
-gettty=:
+gettty=$commit
 OPTIND=1
-while getopts 'tThH' opt
+while getopts "$opts" opt
 do	case $opt in
 	t)	gettty=:;;
 	T)	gettty=false;;
@@ -63,6 +89,15 @@ cd "$dir" >/dev/null 2>&1 || Die "cannot cd to $dir"
 
 ExecDie rm -f -- .git/index
 ExecDie git add --all .
+
+if $status
+then	ExecDie git status ${1+"$@"}
+	exit
+elif $index
+then	ExecDie git update-index --refresh -q --unmerged ${1+"$@"}
+	exit
+fi
+
 ExecDie git commit -a ${1+"$@"}
 Echo 'Next steps:
 	git-gc

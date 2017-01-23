@@ -32,7 +32,7 @@ case $state in
 	tags=(${(f)"$(_call_program tagrefs git tag -l 2>/dev/null)"})
 	(( $? )) && {
 		_message 'not a git repository'
-		return 1
+		return ret
 	}
 	_wanted tags expl tag compadd -M 'r:|/=**' "$@" -a - tags && ret=0;;
 esac
