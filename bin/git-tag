@@ -28,6 +28,10 @@ Fatal() {
 	exit 1
 }
 
+Warning() {
+	Echo "${0##*/}: warning: $*" >&2
+}
+
 Usage() {
 	if $archive
 	then	help='
@@ -44,20 +48,22 @@ the timezone of the generating servers must be identical.
 The script sets the timezone to PST8PDT (of the github servers) by default,
 but you can override this by some options.
 '
-		extraopts='
+		extraopts='[tag (or commit)]
+-c     Specify commit instead of tag; use master if not specified.
+       Default to unsigned
 -z     Keep zip file archive; by default only .tar.gz is kept
 -p     Set TZ to ":/usr/share/zoneinfo/US/Pacific-New" for zip file generation
 -P VAL Set TZ to VAL. If VAL is empty or "-", do not modify TZ'
-	else	help='
+	else	help='[tag]
 Tag a release (reminding about possible signing) or remove a tag.'
-		extraopts='
+		extraopts='[tag]
 -d     Delete tag (locally)
 -D     Delete tag (locally and remotely)
 -r     Remove tag (remotely)'
 	fi
-	Echo "Usage: ${0##*/} [options] [tag]$help
--s     Sign$signdefault
--a     Do not sign$unsigndefault
+	Echo "Usage: ${0##*/} [options] $help
+-s     Sign$signdefaulttext
+-a     Do not sign$unsigndefaulttext
 -t     Set GPG_TTY to current tty (default)
 -T     Do not modify GPG_TTY$extraopts
 -f     Force even if tag does not start with v
@@ -66,36 +72,40 @@ Tag a release (reminding about possible signing) or remove a tag.'
 }
 
 if [ -n "${GPG_TTY++}" ]
-then	sign=:
-	signdefault=' (default since $GPG_TTY is set)'
-	unsigndefault=
-else	sign=false
-	signdefault=
-	unsigndefault=' (default since $GPG_TTY is unset)'
+then	signdefault=:
+	signdefaulttext=' (default since $GPG_TTY is set)'
+	unsigndefaulttext=
+else	signdefault=false
+	signdefaulttext=
+	unsigndefaulttext=' (default since $GPG_TTY is unset)'
 fi
 
 if $archive
-then	addopt=zpP:
+then	addopt=zpcP:
 else	addopt=dDr
 fi
 
 tz=PST8PDT
 gettty=:
+commit=false
 force=false
 delete=false
 remove=false
 keepzip=false
+sign=
 OPTIND=1
 while getopts "ftTsahH$addopt" opt
 do	case $opt in
 	s)	sign=:;;
 	a)	sign=false;;
-	p)	tz=:/usr/share/zoneinfo/US/Pacific-New;;
+	p)	tz=':/usr/share/zoneinfo/US/Pacific-New';;
 	P)	tz=$OPTARG;;
 	d)	delete=:;;
 	D)	delete=:
 		remove=:;;
 	r)	remove=:;;
+	c)	commit=:
+		signdefault=false;;
 	t)	gettty=:;;
 	T)	gettty=false;;
 	f)	force=:;;
@@ -111,6 +121,7 @@ dir=`git rev-parse --show-toplevel 2>/dev/null` && [ -n "$dir" ] \
 
 cd "$dir" >/dev/null 2>&1 || Die "cannot cd to $dir"
 
+: ${sign:=$signdefault}
 if $sign
 then	tagtext=signed
 else	tagtext=unsigned
@@ -118,6 +129,8 @@ fi
 
 if [ $# -gt 0 ]
 then	tag=$1
+elif $commit
+then	tag=master
 else	EchoExec git tag -ln --sort=version:refname
 	latesttag=`git describe --abbrev=0 2>/dev/null` || latesttag=
 	if [ -z "${latesttag:++}" ]
@@ -143,18 +156,42 @@ else	EchoExec git tag -ln --sort=version:refname
 	fi
 fi
 
-case ${tag:-/} in
-*[!.0123456789_abcdefghijklmnopqrstuvwxyz]*)
-	Fatal 'Illegal tag';;
-esac
-! $force && case $tag in
-v*)
-	false;;
-esac && Fatal 'tag must start with v'
+if $commit
+then	tag=`git rev-parse "$tag"` || Fatal 'cannot git rev-parse commit'
+	case ${tag:-/} in
+	*[!0123456789abcdef]*)
+		Fatal 'strange output of git rev-parse';;
+	esac
+else	case ${tag:-/} in
+	*[!.0123456789_abcdefghijklmnopqrstuvwxyz]*)
+		Fatal 'illegal tag';;
+	esac
+	! $force && case $tag in
+	v*)
+		false;;
+	esac && Fatal 'tag must start with v'
+fi
+
+GetRemote() {
+	remote=`git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'` \
+	&& case ${remote:-x} in
+	*/*)
+		:;;
+	*)
+		false;;
+	esac || {
+		remote=origin/master
+		Warning "cannot determine remote branch. using $remote"
+	}
+}
 
 if $delete || $remove
 then	! $delete || EchoExec git tag -d "$tag"
-	! $remove || EchoExec git push origin ":refs/tags/$tag"
+	if $remove
+	then	GetRemote
+		origin=${remote%%/*}
+		EchoExec git push "$origin" ":refs/tags/$tag"
+	fi
 	exit
 fi
 

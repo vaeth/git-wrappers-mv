@@ -1,7 +1,7 @@
 #compdef git-tag git-archive
 local curcontext="$curcontext" state state_descr line
 typeset -A opt_args
-local opts
+local opts archive
 opts=(
 '(1 -)'{'-h','-H'}'[help]'
 '(-a)-s[Sign]'
@@ -12,14 +12,17 @@ opts=(
 )
 case $service in
 (*tag*)
+	archive=false
 	opts+=(
 '-d[Delete tag locally]'
 '(-d -r)-D[Delete tag locally and remotely]'
 '-r[Remove tag remotely]'
 );;
 (*)
+	archive=:
 	opts+=(
-'(-P)-p[TZ=\::/usr/share/zoneinfo/US/Pacific-New]'
+'-c[argument is a commit or "master", not a tag]'
+'(-P)-p[TZ=\:/usr/share/zoneinfo/US/Pacific-New]'
 '(-p)-P+[Set TZ to specficied value for zip]:timezone:_time_zone'
 );;
 esac
@@ -28,6 +31,16 @@ _arguments -C -s -S -A '-*' : $opts \
 local ret=$?
 case $state in
 (tag)
+	if $archive && [[ -n ${opt_args[-c]++} ]]
+	then	words=(git rev-parse '')
+		CURRENT=3
+		state=
+		state_descr=
+		line=
+		opt_args=()
+		_normal && ret=0
+		return ret
+	fi
 	local tags
 	tags=(${(f)"$(_call_program tagrefs git tag -l 2>/dev/null)"})
 	(( $? )) && {
