@@ -52,6 +52,8 @@ but you can override this by some options.
 -c     Specify commit instead of tag; use master if not specified.
        Default to unsigned
 -z     Keep zip file archive; by default only .tar.gz is kept
+-X     Do not keep .tar.gz
+-x     Create .xpi file. You might want to combine this with -Xa
 -p     Set TZ to ":/usr/share/zoneinfo/US/Pacific-New" for zip file generation
 -P VAL Set TZ to VAL. If VAL is empty or "-", do not modify TZ'
 	else	help='[tag]
@@ -81,7 +83,7 @@ else	signdefault=false
 fi
 
 if $archive
-then	addopt=zpcP:
+then	addopt=zxXpcP:
 else	addopt=dDr
 fi
 
@@ -91,7 +93,9 @@ commit=false
 force=false
 delete=false
 remove=false
+createxpi=false
 keepzip=false
+keeptgz=:
 sign=
 OPTIND=1
 while getopts "ftTsahH$addopt" opt
@@ -109,6 +113,8 @@ do	case $opt in
 	t)	gettty=:;;
 	T)	gettty=false;;
 	f)	force=:;;
+	x)	createxpi=:;;
+	X)	keeptgz=false;;
 	z)	keepzip=:;;
 	'?')	exit 1;;
 	*)	Usage 0;;
@@ -156,6 +162,7 @@ else	EchoExec git tag -ln --sort=version:refname
 	fi
 fi
 
+shorttag=$tag
 if $commit
 then	tag=`git rev-parse "$tag"` || Fatal 'cannot git rev-parse commit'
 	case ${tag:-/} in
@@ -168,6 +175,7 @@ else	case ${tag:-/} in
 	esac
 	! $force && case $tag in
 	v*)
+		shorttag=${tag#v}
 		false;;
 	esac && Fatal 'tag must start with v'
 fi
@@ -212,20 +220,27 @@ fi
 
 name=${PWD##*/}
 name=${name%.git}
-n=$name-${tag#v}
-EchoExec git archive --prefix="$n/" -o "$n.tar.gz" "$tag"
-$sign || $keepzip || exit 0
+n=$name-$shorttag
+if $sign || $keeptgz
+then	EchoExec git archive --prefix="$n/" -o "$n".tar.gz "$tag"
+fi
+$sign || $keepzip || $createxpi || exit 0
 (
 	[ "${tz:--}" = '-' ] || {
 		TZ=$tz
 		export TZ
 		Echo "# export TZ=\"$tz\""
 	}
-	EchoExec git archive --prefix="$n/" -o "$n.zip" "$tag"
+	if $sign || $keepzip
+	then	EchoExec git archive --prefix="$n/" -o "$n".zip "$tag"
+	fi
+	if $createxpi
+	then	EchoExec git archive --format=zip -o "$n".xpi "$tag"
+	fi
 )
 $sign || exit 0
 
-for i in "$n".tar "$n".tar.* "$n".zip
+for i in "$n".tar "$n".tar.* "$n".zip "$n".xpi
 do	case $i in
 	*.asc)
 		continue;;
@@ -234,3 +249,4 @@ do	case $i in
 	EchoExec gpg --armor --detach-sign "$i"
 done
 $keepzip || rm -vf -- "$n".zip
+$keeptgz || rm -vf -- "$n".tgz
