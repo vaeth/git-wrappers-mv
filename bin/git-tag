@@ -249,4 +249,4 @@ do	case $i in
 	EchoExec gpg --armor --detach-sign "$i"
 done
 $keepzip || rm -vf -- "$n".zip
-$keeptgz || rm -vf -- "$n".tgz
+$keeptgz || rm -vf -- "$n".tar.gz

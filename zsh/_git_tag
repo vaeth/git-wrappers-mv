@@ -22,6 +22,9 @@ case $service in
 	archive=:
 	opts+=(
 '-c[argument is a commit or "master", not a tag]'
+'-z[keep zip file archive]'
+'-X[do not keep tar.gz archive]'
+'-x[Create .xpi file \(usually combined with -aX\)]'
 '(-P)-p[TZ=\:/usr/share/zoneinfo/US/Pacific-New]'
 '(-p)-P+[Set TZ to specficied value for zip]:timezone:_time_zone'
 );;
