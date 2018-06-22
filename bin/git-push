@@ -195,7 +195,7 @@ remote=`git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'` && \
 	}
 origin=${remote%%/*}
 master=${remote#*/}
-! command -v sshstart >/dev/null 2>&1 || sshstart
+! command -v sshstart >/dev/null 2>&1 || eval "`sshstart -e`"
 EchoWaitExec git push -u "$origin" "$master" ${tags:+--tags} ${gitforce:+--force} \
 	|| exit
 $pull || exit 0
