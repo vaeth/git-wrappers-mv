@@ -37,8 +37,9 @@ shift $(( $OPTIND - 1 ))
 ! $quiet || exec >/dev/null
 
 ExecWarn git prune
-ExecWarn git repack -a -d
+# Do not call git repack here: repack -f in the end makes it superfluous
 ExecWarn git reflog expire --expire=now --all
-ExecWarn git gc '--prune=all' --aggressive
-ExecWarn git repack -a -d
-ExecWarn git prune
+ExecWarn git gc '--prune=all'
+# Do not use git gc --aggressive but instead repack  -f --window... --depth... see
+# https://metalinguist.wordpress.com/2007/12/06/the-woes-of-git-gc-aggressive-and-how-git-deltas-work/
+ExecWarn git repack -f -a -d --window=250 --depth=250

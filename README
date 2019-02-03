@@ -3,8 +3,7 @@ git-wrappers-mv - Some personal wrappers for the most important git commands
 
 Author: Martin Väth <martin@mvath.de>
 
-This project is under a BSD type license, meaning that you can do practically
-everything with it except removing my name.
+This project is under the CC-BY-4.0 license.
 
 This is a loose collection of some wrappers for git which I use,
 because I cannot remember the general clumsy git syntax.
