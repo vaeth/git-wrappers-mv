@@ -22,7 +22,7 @@ case $service in
 (*)
 	archive=:
 	opts+=(
-'-c[argument is a commit or "master", not a tag]'
+'-c[argument is a commit or a branch name like "main", not a tag]'
 '-z[keep zip file archive]'
 '-X[do not keep tar.gz archive]'
 '-x[Create .xpi file \(usually combined with -aX\)]'

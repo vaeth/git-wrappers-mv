@@ -55,7 +55,7 @@ The script sets the timezone to PST8PDT (of the github servers) by default,
 but you can override this by some options.
 '
 		extraopts='[tag (or commit)]
--c     Specify commit instead of tag; use master if not specified.
+-c     Specify commit instead of tag; use main if not specified.
        Default to unsigned
 -z     Keep zip file archive; by default only .tar.gz is kept
 -X     Do not keep .tar.gz
@@ -142,7 +142,7 @@ fi
 if [ $# -gt 0 ]
 then	tag=$1
 elif $commit
-then	tag=master
+then	tag=main
 else	EchoExec PAGER= git tag -ln --sort=version:refname
 	latesttag=`git describe --abbrev=0 2>/dev/null` || latesttag=
 	if [ -z "${latesttag:++}" ]
@@ -194,7 +194,7 @@ GetRemote() {
 	*)
 		false;;
 	esac || {
-		remote=origin/master
+		remote=origin/main
 		Warning "cannot determine remote branch. using $remote"
 	}
 }

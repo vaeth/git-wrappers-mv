@@ -59,8 +59,8 @@ Getkey() {
 
 Keytext() {
 	Echo \
-'1: git push -u origin master --tags'${gitforce:+\ --force}'
-2: git push -u origin master'${gitforce:+\ --force}'
+'1: git push -u origin main --tags'${gitforce:+\ --force}'
+2: git push -u origin main'${gitforce:+\ --force}'
 3: modify .git/config: url -> url+pushurl to make push/pull origin simpler
    (should work at least with Github, git.overlays.gentoo.org. BerliOS)
 4: help
@@ -191,13 +191,13 @@ remote=`git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'` && \
 	*)
 		false;;
 	esac || {
-		remote=origin/master
+		remote=origin/main
 		Warning "cannot determine remote branch. using $remote"
 	}
 origin=${remote%%/*}
-master=${remote#*/}
+main=${remote#*/}
 ! command -v sshstart >/dev/null 2>&1 || eval "`sshstart -e`"
-EchoWaitExec git push -u "$origin" "$master" ${tags:+--tags} ${gitforce:+--force} \
+EchoWaitExec git push -u "$origin" "$main" ${tags:+--tags} ${gitforce:+--force} \
 	|| exit
 $pull || exit 0
 [ -z "${sleep:++}" ] || sleep $sleep
