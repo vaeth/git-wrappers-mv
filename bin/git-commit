@@ -23,15 +23,15 @@ Echo() {
 	printf '%s\n' "$*"
 }
 
-Die() {
+Fatal() {
 	s=$?
 	Echo "${0##*/}: fatal: $1" >&2
 	exit ${2:-$s}
 }
 
-ExecDie() {
+ExecOrFatal() {
 	Echo "# $*"
-	"$@" || Die "$* returned $?"
+	"$@" || Fatal "$* returned $?"
 }
 
 Usage() {
@@ -84,22 +84,22 @@ then	GPG_TTY=`tty` && [ -n "${GPG_TTY:++}" ] && export GPG_TTY \
 fi
 
 dir=`git rev-parse --show-toplevel 2>/dev/null` && [ -n "$dir" ] \
-	&& test -d "$dir/.git" || Die 'not in a git repository'
+	&& test -d "$dir/.git" || Fatal 'not in a git repository'
 
-cd "$dir" >/dev/null 2>&1 || Die "cannot cd to $dir"
+cd "$dir" >/dev/null 2>&1 || Fatal "cannot cd to $dir"
 
-ExecDie rm -f -- .git/index
-ExecDie git add --all .
+ExecOrFatal rm -f -- .git/index
+ExecOrFatal git add --all .
 
 if $status
-then	ExecDie git status ${1+"$@"}
+then	ExecOrFatal git status ${1+"$@"}
 	exit
 elif $index
-then	ExecDie git update-index --refresh -q --unmerged ${1+"$@"}
+then	ExecOrFatal git update-index --refresh -q --unmerged ${1+"$@"}
 	exit
 fi
 
-ExecDie git commit -a ${1+"$@"}
+ExecOrFatal git commit -a ${1+"$@"}
 Echo 'Next steps:
 	git-gc
 	[git-tag && git-gc]
